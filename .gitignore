@@ -1,0 +1,14 @@
+# Environments
+env/
+venv/
+
+# Data
+data/bbd1k/
+*.tgz
+
+# Checkpoints
+*.pth
+models/
+
+# Jupyter Notebook
+.ipynb_checkpoints

@@ -1,5 +1,7 @@
 import argparse
+import cv2
 import glob
+import numpy as np
 import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -7,7 +9,7 @@ from sklearn.model_selection import train_test_split
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create .csv file with data train/val/test split.')
     parser.add_argument('--data_dir', type=str, default='data/bbd1k/',  help='specify the root path of images')
-    parser.add_argument('--csv_dir', type=str, default='bbd1k_data_split.csv',  help='specify the path of the .csv output')
+    parser.add_argument('--split_file', type=str, default='bbd1k_data_split.csv',  help='specify the name of the .csv output')
     parser.add_argument('--test_ratio', type=float, default=0.2, help='proportion of the dataset to include in the test split.')
     parser.add_argument('--val_ratio', type=float, default=0.15, help='proportion of the dataset to include in the validation split')
     args = parser.parse_args()
@@ -16,11 +18,17 @@ if __name__ == "__main__":
 
     df = pd.DataFrame({"filename": image_names})
     df["split"] = "train"
+    df["buildings"] = False
 
-    train_idx, test_idx = train_test_split(df.index, test_size=args.test_ratio)
+    for idx, img_name in df["filename"].items():
+        mask = cv2.imread(os.path.join(args.data_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
+        if not np.all(mask==255):
+            df.loc[idx, "buildings"] = True
+
+    train_idx, test_idx = train_test_split(df.index, test_size=args.test_ratio, stratify=df.buildings)
     df.loc[test_idx, "split"] = "test"
 
-    train_idx, val_idx = train_test_split(train_idx, test_size=args.val_ratio/(1.0-args.test_ratio))
+    train_idx, val_idx = train_test_split(train_idx, test_size=args.val_ratio/(1.0-args.test_ratio), stratify=df.loc[train_idx, "buildings"])
     df.loc[val_idx, "split"] = "val"
 
-    df.to_csv(args.data_dir + args.csv_dir, index=False)
+    df.to_csv(args.data_dir + args.split_file, index=False)

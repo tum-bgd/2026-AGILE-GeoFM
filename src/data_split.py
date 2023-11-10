@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser.add_argument('--val_ratio', type=float, default=0.15, help='proportion of the dataset to include in the validation split')
     args = parser.parse_args()
 
+    # There are 18 OSM masks without a corresponding image, that is why, I use images to extract filename list
     image_names = [os.path.basename(x) for x in glob.glob(args.data_dir + "*-image.png")]
 
     df = pd.DataFrame({"filename": image_names})
@@ -21,9 +22,15 @@ if __name__ == "__main__":
     df["buildings"] = False
 
     for idx, img_name in df["filename"].items():
-        mask = cv2.imread(os.path.join(args.data_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
-        if not np.all(mask==255):
-            df.loc[idx, "buildings"] = True
+        image = cv2.imread(os.path.join(args.data_dir, img_name))
+        # Some images (813 out of 15828) have black borders (which are as well reflected in the masks) 
+        # from the tiling process, remove these from the list.
+        if np.any(np.all(image==0, axis=2)):
+            df.drop(idx, inplace=True)
+        else:
+            mask = cv2.imread(os.path.join(args.data_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
+            if not np.all(mask==255):
+                df.loc[idx, "buildings"] = True
 
     train_idx, test_idx = train_test_split(df.index, test_size=args.test_ratio, stratify=df.buildings)
     df.loc[test_idx, "split"] = "test"

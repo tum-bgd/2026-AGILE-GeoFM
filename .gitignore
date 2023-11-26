@@ -3,7 +3,7 @@ env/
 venv/
 
 # Data
-data/bbd1k/
+data/
 *.tgz
 
 # Checkpoints

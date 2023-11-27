@@ -13,14 +13,14 @@ class Visualizer():
                 w, h = box[2] - box[0], box[3] - box[1]
                 ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='blue', facecolor=(0,0,0,0), lw=1))
         else:
-            input_points = np.array(input_points).reshape(-1, 2)
-            labels = np.ones_like(input_points[:, 0])
+            prompts = np.array(prompts).reshape(-1, 2)
+            labels = np.ones_like(prompts[:, 0])
 
             if self.prompt_type == 'foreground_background_pts':
                 labels[labels.shape//2:] = 0
 
-            pos_points = input_points[labels==1]
-            neg_points = input_points[labels==0]
+            pos_points = prompts[labels==1]
+            neg_points = prompts[labels==0]
             ax.scatter(pos_points[:, 0], pos_points[:, 1], color='blue', marker='*', s=100, edgecolor='white', linewidth=1.25)
             ax.scatter(neg_points[:, 0], neg_points[:, 1], color='red', marker='*', s=100, edgecolor='white', linewidth=1.25)
 

@@ -45,7 +45,7 @@ def mask_to_prompt(mask_array):
             return [[[pt.x, pt.y]] for pt in pts]
 
         if prompt_type=='multiple_pts':
-            return [random_points_in_polygon(polygon, nr_pts) for polygon in polygons]
+            return [random_points_in_polygon(polygon) for polygon in polygons]
 
         if prompt_type=='foreground_background_pts':
             foreground_pts = random.sample(np.argwhere(mask==0).tolist(), nr_pts)

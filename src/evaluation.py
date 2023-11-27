@@ -4,7 +4,7 @@ from torchmetrics.classification import BinaryAccuracy, BinaryF1Score, \
 
 class Evaluation():
     def __init__(self):
-        # Instantiate all the metrics to be computed 
+        # Instantiate all the metrics to be computed
         self.accuracy = BinaryAccuracy()
         self.f1 = BinaryF1Score()
         self.iou = BinaryJaccardIndex()

@@ -29,22 +29,22 @@ def mask_to_prompt(mask_array, prompt_type, nr_pts):
         if prompt_type=='bb':
             bb = shapely.envelope(polygons)
             return [list(box.bounds) for box in bb]
-        
+
         if prompt_type=='center_pt':
-            # centroid doesnt return a point that lies inside the polygon 
-            # for irregular shapes. representative_point cheaply computes a  
+            # centroid doesnt return a point that lies inside the polygon
+            # for irregular shapes. representative_point cheaply computes a
             # point that always lies within the polygon
             pts = [polygon.representative_point() for polygon in polygons]
             return [[[pt.x, pt.y]] for pt in pts]
-        
+
         if prompt_type=='multiple_pts':
             return [random_points_in_polygon(polygon, nr_pts) for polygon in polygons]
-        
+
         if prompt_type=='foreground_background_pts':
             foreground_pts = random.sample(np.argwhere(mask==0).tolist(), nr_pts)
             background_pts = random.sample(np.argwhere(mask==255).tolist(), nr_pts)
             return [foreground_pts, background_pts]
-        
+
     else:
         return []
 
@@ -62,16 +62,16 @@ class GeoDataset(Dataset):
 
     def __getitem__(self, idx):
         # get mask and generate its prompts then transform it into binary mask
-        # the prompts are generated before to account for every building on its own 
+        # the prompts are generated before to account for every building on its own
         # (there is a color fading between the outlines of the buildings)
-        mask = cv2.imread(os.path.join(self.img_dir, self.img_list[:-9] + 'osm.png'), 0).astype(np.uint8)
+        mask = cv2.imread(os.path.join(self.img_dir, self.img_list[idx][:-9] + 'osm.png'), 0).astype(np.uint8)
         prompts = mask_to_prompt(mask, self.prompt_type, self.nr_pts)
         mask = cv2.threshold(mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
-        sample = { 
+        sample = {
             'image' : Image.open(os.path.join(self.img_dir, self.img_list[idx])),
             'gt' : mask,
             'prompts': prompts,
-            'pred_file': os.path.join(self.out_dir, self.img_list[:-9] + 'pred.png')
+            'pred_file': os.path.join(self.out_dir, self.img_list[idx][:-9] + 'pred.png')
         }
         return sample

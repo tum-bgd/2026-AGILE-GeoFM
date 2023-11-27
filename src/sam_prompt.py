@@ -35,7 +35,7 @@ def main(args):
     img_list = split_list.filename[split_list.buildings==True].tolist()
 
     # Create a dataloader to batch the data
-    dataset = GeoDataset(img_dir, img_list, prompt_type, nr_pts)
+    dataset = GeoDataset(img_dir, img_list, prompt_type, nr_pts, out_dir)
     dataloader = DataLoader(dataset, batch_size=32, drop_last=False)
     print(f'total images: {len(dataset)}')
 
@@ -51,25 +51,25 @@ def main(args):
     # Prediction
     for batch in tqdm(dataloader):
         if prompt_type == 'bb':
-            inputs = processor(batch['image'], 
-                               input_boxes=batch['prompts'], 
+            inputs = processor(batch['image'],
+                               input_boxes=batch['prompts'],
                                return_tensors="pt").to(device)
         elif prompt_type == 'foreground_background_pts':
-            inputs = processor(batch['image'], 
-                               input_points=batch['prompts'], 
-                               input_labels=[[1]*nr_pts, [0]*nr_pts], 
+            inputs = processor(batch['image'],
+                               input_points=batch['prompts'],
+                               input_labels=[[1]*nr_pts, [0]*nr_pts],
                                return_tensors="pt").to(device)
         else:
-            inputs = processor(batch['image'], 
-                               input_points=batch['prompts'], 
+            inputs = processor(batch['image'],
+                               input_points=batch['prompts'],
                                return_tensors="pt").to(device)
 
         with torch.no_grad():
             outputs = model(**inputs, multimask_output=False)
 
         masks = processor.image_processor.post_process_masks(
-            outputs.pred_masks.cpu().detach(), 
-            inputs["original_sizes"].cpu(), 
+            outputs.pred_masks.cpu().detach(),
+            inputs["original_sizes"].cpu(),
             inputs["reshaped_input_sizes"].cpu()
         )
 

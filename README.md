@@ -5,9 +5,10 @@ Build the docker file
 ```
 docker build --target python-geofm -t python-geofm .
 ```
-Run and access the docker container 
+Run and access the docker container
 ```
-docker run --gpus device=1 -d -it --mount type=bind,source=/home/wejdene/GeoFM,target=/GEO python-geofm
+docker run --gpus device=1 -d -it --mount type=bind,source="$(pwd)",target=/GEO python-geofm
+docker exec -it <docker-container-id> bash
 ```
 Start a tmux session and attach to it
 ```
@@ -24,7 +25,7 @@ Ctrl+b d
 ## Models
 1. Evaluate SAM with prompts from ground-truth masks
     ```
-    python3 src/sam_gt_prompt.py
+    python3 src/sam_prompt.py
     ```
     1. `--prompt bb` : bounding-boxes
 

@@ -4741,7 +4741,7 @@ patch-37-145-image.png,train,False
 patch-37-69-image.png,train,False
 patch-56-87-image.png,train,False
 patch-37-56-image.png,train,False
-patch-11-201-image.png,train,True
+patch-11-201-image.png,train,False
 patch-12-136-image.png,val,False
 patch-46-32-image.png,train,False
 patch-24-132-image.png,test,True
@@ -10337,7 +10337,7 @@ patch-49-416-image.png,train,False
 patch-6-227-image.png,train,False
 patch-50-56-image.png,test,True
 patch-40-40-image.png,train,False
-patch-6-413-image.png,train,True
+patch-6-413-image.png,train,False
 patch-29-210-image.png,train,False
 patch-43-427-image.png,train,False
 patch-14-177-image.png,train,False
@@ -10822,7 +10822,7 @@ patch-16-395-image.png,train,False
 patch-20-177-image.png,train,True
 patch-17-72-image.png,train,False
 patch-57-68-image.png,train,False
-patch-6-19-image.png,train,True
+patch-6-19-image.png,train,False
 patch-1-117-image.png,train,False
 patch-1-424-image.png,train,True
 patch-9-405-image.png,test,False
@@ -10924,7 +10924,7 @@ patch-85-59-image.png,train,False
 patch-2-119-image.png,train,False
 patch-46-423-image.png,train,False
 patch-18-258-image.png,test,False
-patch-16-391-image.png,train,True
+patch-16-391-image.png,train,False
 patch-50-101-image.png,val,False
 patch-14-51-image.png,val,False
 patch-44-137-image.png,train,False
@@ -11952,7 +11952,7 @@ patch-2-325-image.png,train,True
 patch-3-344-image.png,test,True
 patch-20-168-image.png,test,False
 patch-2-137-image.png,train,False
-patch-67-100-image.png,train,True
+patch-67-100-image.png,train,False
 patch-47-109-image.png,train,True
 patch-14-98-image.png,val,True
 patch-37-126-image.png,val,False
@@ -12067,7 +12067,7 @@ patch-23-85-image.png,train,False
 patch-7-125-image.png,train,True
 patch-4-415-image.png,test,True
 patch-31-58-image.png,train,False
-patch-30-431-image.png,train,True
+patch-30-431-image.png,train,False
 patch-20-120-image.png,train,False
 patch-1-233-image.png,train,True
 patch-49-49-image.png,train,False
@@ -12727,7 +12727,7 @@ patch-36-55-image.png,train,False
 patch-28-113-image.png,test,False
 patch-39-130-image.png,train,False
 patch-4-19-image.png,train,True
-patch-7-106-image.png,train,True
+patch-7-106-image.png,train,False
 patch-16-239-image.png,train,False
 patch-55-61-image.png,train,False
 patch-28-389-image.png,train,False
@@ -14567,7 +14567,7 @@ patch-64-128-image.png,train,False
 patch-63-75-image.png,train,True
 patch-27-89-image.png,test,True
 patch-11-51-image.png,train,False
-patch-43-81-image.png,val,True
+patch-43-81-image.png,val,False
 patch-3-180-image.png,train,True
 patch-37-58-image.png,test,True
 patch-15-48-image.png,train,False

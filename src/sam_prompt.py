@@ -51,7 +51,7 @@ def mask_to_prompt(mask_array):
         if prompt_type=='foreground_background_pts':
             foreground_pts = random.sample(np.argwhere(mask==0).tolist(), nr_pts)
             background_pts = random.sample(np.argwhere(mask==255).tolist(), nr_pts)
-            return [foreground_pts, background_pts], areas
+            return [foreground_pts + background_pts], areas
 
     else:
         return []
@@ -107,7 +107,7 @@ def main(args):
         elif prompt_type == 'foreground_background_pts':
             inputs = processor(image,
                                input_points=[prompts],
-                               input_labels=[[1]*nr_pts, [0]*nr_pts],
+                               input_labels=[[[1]*nr_pts + [0]*nr_pts]],
                                return_tensors="pt").to(device)
         else:
             inputs = processor(image,
@@ -126,6 +126,8 @@ def main(args):
         # drop the masks that are too large compared to the ground truth
         if prompt_type != 'foreground_background_pts':
             pred_mask = pred_mask[0][torch.sum(pred_mask[0], dim=(1, 2, 3)) <= 5 * torch.tensor(areas)]
+        else:
+            pred_mask = pred_mask[0]
 
         # assemble the multiple predicted masks for the same image into one
         pred_mask = torch.any(pred_mask, dim=0).type(torch.uint8)

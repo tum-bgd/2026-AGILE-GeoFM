@@ -31,26 +31,27 @@ def mask_to_prompt(mask_array):
     mask = mask_array == 0
     shapes = features.shapes(mask_array, mask)
     polygons = [shapely.geometry.shape(shape) for shape, _ in shapes]
+    areas = shapely.area(polygons)
 
     if polygons:
         if prompt_type=='bb':
             bb = shapely.envelope(polygons)
-            return [list(box.bounds) for box in bb]
+            return [list(box.bounds) for box in bb], areas
 
         if prompt_type=='center_pt':
             # centroid doesnt return a point that lies inside the polygon
             # for irregular shapes. representative_point cheaply computes a
             # point that always lies within the polygon
             pts = [polygon.representative_point() for polygon in polygons]
-            return [[[pt.x, pt.y]] for pt in pts]
+            return [[[pt.x, pt.y]] for pt in pts], areas
 
         if prompt_type=='multiple_pts':
-            return [random_points_in_polygon(polygon) for polygon in polygons]
+            return [random_points_in_polygon(polygon) for polygon in polygons], areas
 
         if prompt_type=='foreground_background_pts':
             foreground_pts = random.sample(np.argwhere(mask==0).tolist(), nr_pts)
             background_pts = random.sample(np.argwhere(mask==255).tolist(), nr_pts)
-            return [foreground_pts, background_pts]
+            return [foreground_pts, background_pts], areas
 
     else:
         return []
@@ -86,7 +87,7 @@ def main(args):
 
     # Instantiate the Evaluator and Visualizer
     evaluation = Evaluation()
-    visualizer = Visualizer(prompt_type)
+    visualizer = Visualizer(prompt_type, nr_pts)
 
     # Prediction
     for _, img_name in enumerate(tqdm(img_list)):
@@ -96,7 +97,7 @@ def main(args):
         # the prompts are generated before to account for every building on its own
         # (there is a color fading between the outlines of the buildings)
         gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
-        prompts = mask_to_prompt(gt_mask)
+        prompts, areas = mask_to_prompt(gt_mask)
         gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
         if prompt_type == 'bb':
@@ -122,8 +123,12 @@ def main(args):
             inputs["reshaped_input_sizes"].cpu()
         )
 
+        # drop the masks that are too large compared to the ground truth
+        if prompt_type != 'foreground_background_pts':
+            pred_mask = pred_mask[0][torch.sum(pred_mask[0], dim=(1, 2, 3)) <= 5 * torch.tensor(areas)]
+
         # assemble the multiple predicted masks for the same image into one
-        pred_mask = torch.any(pred_mask[0], dim=0).type(torch.uint8)
+        pred_mask = torch.any(pred_mask, dim=0).type(torch.uint8)
 
         # Save the image
         pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')

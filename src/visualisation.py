@@ -3,8 +3,15 @@ import numpy as np
 
 
 class Visualizer():
-    def __init__(self, prompt_type):
+    def __init__(self, prompt_type, nr_pts):
         self.prompt_type = prompt_type
+        self.nr_pts = nr_pts
+        self.predictions = {
+            'bb': "Bounding Box",
+            'center_pt': "Representative Point",
+            'multiple_pts': f"{nr_pts} Sampled Points",
+            'foreground_background_pts': f"{nr_pts} Fore-/Background Points"
+        }
 
     def show_prompts(self, ax, prompts):
         if self.prompt_type == 'bb':
@@ -36,7 +43,7 @@ class Visualizer():
         axes[1].set_frame_on(True)
 
         axes[2].imshow(pred_mask, cmap='binary')
-        axes[2].title.set_text("Predicted")
+        axes[2].title.set_text(f"{self.predictions} Prediction")
 
         for ax in axes:
             ax.axes.get_xaxis().set_visible(False)

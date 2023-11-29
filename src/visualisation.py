@@ -21,8 +21,8 @@ class Visualizer():
 
             pos_points = prompts[labels==1]
             neg_points = prompts[labels==0]
-            ax.scatter(pos_points[:, 0], pos_points[:, 1], color='blue', marker='X', s=50, edgecolor='white', linewidth=0.5)
-            ax.scatter(neg_points[:, 0], neg_points[:, 1], color='red', marker='X', s=50, edgecolor='white', linewidth=0.5)
+            ax.scatter(pos_points[:, 0], pos_points[:, 1], color='blue', marker='.', s=100, edgecolor='white', linewidth=1)
+            ax.scatter(neg_points[:, 0], neg_points[:, 1], color='red', marker='.', s=100, edgecolor='white', linewidth=1)
 
     def save(self, image, prompts, mask, pred_mask, pred_name):
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))

@@ -43,7 +43,7 @@ class Visualizer():
         axes[1].set_frame_on(True)
 
         axes[2].imshow(pred_mask, cmap='binary')
-        axes[2].title.set_text(f"{self.predictions} Prediction")
+        axes[2].title.set_text(f"{self.predictions[self.prompt_type]} Prediction")
 
         for ax in axes:
             ax.axes.get_xaxis().set_visible(False)

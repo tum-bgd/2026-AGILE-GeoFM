@@ -49,7 +49,7 @@ def mask_to_prompt(mask_array):
             return [random_points_in_polygon(polygon) for polygon in polygons], areas
 
         if prompt_type=='foreground_background_pts':
-            foreground_pts = random.sample(np.argwhere(mask==0).tolist(), nr_pts)
+            foreground_pts = random_points_in_polygon(shapely.MultiPolygon(polygons))
             background_pts = random.sample(np.argwhere(mask==255).tolist(), nr_pts)
             return [foreground_pts + background_pts], areas
 
@@ -107,7 +107,7 @@ def main(args):
         elif prompt_type == 'foreground_background_pts':
             inputs = processor(image,
                                input_points=[prompts],
-                               input_labels=[[[1]*nr_pts + [0]*nr_pts]],
+                               input_labels=[[[1]*nr_pts + [0]*nr_pts]], # TODO should it be 0 or -1?
                                return_tensors="pt").to(device)
         else:
             inputs = processor(image,

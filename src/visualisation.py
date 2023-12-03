@@ -3,22 +3,32 @@ import numpy as np
 
 
 class Visualizer():
-    def __init__(self, prompt_type, nr_pts):
+    def __init__(self, prompt_type, prompt_info):
         self.prompt_type = prompt_type
-        self.nr_pts = nr_pts
+        self.prompt_info = prompt_info
         self.predictions = {
             'bb': "Bounding Box",
             'center_pt': "Representative Point",
-            'multiple_pts': f"{nr_pts} Sampled Points",
-            'foreground_background_pts': f"{nr_pts} Fore-/Background Points"
+            'multiple_pts': f"{prompt_info} Sampled Points",
+            'foreground_background_pts': f"{prompt_info} Fore-/Background Points",
+            'text_prompt': "DINO Bounding Box",
+            'auto_sam_classified': "SAM Automatic Classified"
         }
 
     def show_prompts(self, ax, prompts):
-        if self.prompt_type == 'bb':
+        if self.prompt_type == 'bb' or self.prompt_type == 'text_prompt':
             for box in prompts:
                 x0, y0 = box[0], box[1]
                 w, h = box[2] - box[0], box[3] - box[1]
                 ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='blue', facecolor=(0,0,0,0), lw=1))
+
+        elif self.prompt_type == 'auto_sam_classified':
+            for mask in prompts:
+                color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
+                h, w = mask.shape[-2:]
+                mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
+                ax.imshow(mask_image)
+
         else:
             prompts = np.array(prompts).reshape(-1, 2)
             labels = np.ones_like(prompts[:, 0])
@@ -36,7 +46,12 @@ class Visualizer():
 
         axes[0].imshow(image)
         self.show_prompts(axes[0], prompts)
-        axes[0].title.set_text("Orthophoto")
+        if self.prompt_type == 'text_prompt':
+            axes[0].title.set_text(f"DINO {self.prompt_info} Prompted Orthophoto")
+        elif self.prompt_type == 'auto_sam_classified':
+            axes[0].title.set_text("SAM Automatic Orthophoto")
+        else:
+            axes[0].title.set_text("Prompted Orthophoto")
 
         axes[1].imshow(mask, cmap='binary')
         axes[1].title.set_text("Ground Truth")

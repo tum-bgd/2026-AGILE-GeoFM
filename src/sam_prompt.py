@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 import os
 import pandas as pd
-import random
 import shapely
 import torch
 
@@ -14,6 +13,16 @@ from transformers import SamProcessor, SamModel
 
 from evaluation import Evaluation
 from visualisation import Visualizer
+
+
+def random_points_in_background(polygon):
+    pts = []
+    while len(pts) < nr_pts:
+        x = np.random.uniform(0, 1024)
+        y = np.random.uniform(0, 1024)
+        if not polygon.contains(shapely.Point(x, y)):
+            pts.append([x, y])
+    return pts
 
 
 def random_points_in_polygon(polygon):
@@ -49,8 +58,9 @@ def mask_to_prompt(mask_array):
             return [random_points_in_polygon(polygon) for polygon in polygons], areas
 
         if prompt_type=='foreground_background_pts':
-            foreground_pts = random_points_in_polygon(shapely.MultiPolygon(polygons))
-            background_pts = random.sample(np.argwhere(mask==255).tolist(), nr_pts)
+            multipolygon = shapely.MultiPolygon(polygons)
+            foreground_pts = random_points_in_polygon(multipolygon)
+            background_pts = random_points_in_background(multipolygon)
             return [foreground_pts + background_pts], areas
 
     else:

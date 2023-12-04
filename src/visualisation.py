@@ -47,7 +47,7 @@ class Visualizer():
         axes[0].imshow(image)
         self.show_prompts(axes[0], prompts)
         if self.prompt_type == 'text_prompt':
-            axes[0].title.set_text(f"DINO {self.prompt_info} Prompted Orthophoto")
+            axes[0].title.set_text(f"DINO [{self.prompt_info}] Prompted Orthophoto")
         elif self.prompt_type == 'auto_sam_classified':
             axes[0].title.set_text("SAM Automatic Orthophoto")
         else:
@@ -55,7 +55,6 @@ class Visualizer():
 
         axes[1].imshow(mask, cmap='binary')
         axes[1].title.set_text("Ground Truth")
-        axes[1].set_frame_on(True)
 
         axes[2].imshow(pred_mask, cmap='binary')
         axes[2].title.set_text(f"{self.predictions[self.prompt_type]} Prediction")

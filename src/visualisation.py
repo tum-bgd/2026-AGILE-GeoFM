@@ -34,7 +34,7 @@ class Visualizer():
             labels = np.ones_like(prompts[:, 0])
 
             if self.prompt_type == 'foreground_background_pts':
-                labels[labels.shape//2:] = 0
+                labels = np.array([1]*self.prompt_info + [0]*self.prompt_info)
 
             pos_points = prompts[labels==1]
             neg_points = prompts[labels==0]

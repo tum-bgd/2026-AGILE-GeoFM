@@ -7,8 +7,8 @@ docker build --target python-geofm -t python-geofm .
 ```
 Run and access the docker container
 ```
-docker run --gpus device=1 -d -it --mount type=bind,source="$(pwd)",target=/GEO python-geofm
-docker exec -it <docker-container-id> bash
+docker run --gpus device=1 --name geofm-container -d -it --mount type=bind,source="$(pwd)",target=/GEO python-geofm
+docker exec -it geofm-container bash
 ```
 Start a tmux session and attach to it
 ```

@@ -60,6 +60,7 @@ class Visualizer():
         axes[2].title.set_text(f"{self.predictions[self.prompt_type]} Prediction")
 
         for ax in axes:
+            ax.set_autoscale_on(False)
             ax.axes.get_xaxis().set_visible(False)
             ax.axes.get_yaxis().set_visible(False)
             plt.setp(ax.spines.values(), color='gray')

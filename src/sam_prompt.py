@@ -92,6 +92,7 @@ def main(args):
 
     # Load Model
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"The device used is {device}")
     processor = SamProcessor.from_pretrained(model_name)
     model = SamModel.from_pretrained(model_name).to(device)
 
@@ -117,7 +118,7 @@ def main(args):
         elif prompt_type == 'foreground_background_pts':
             inputs = processor(image,
                                input_points=[prompts],
-                               input_labels=[[[1]*nr_pts + [0]*nr_pts]], # TODO should it be 0 or -1?
+                               input_labels=[[[1]*nr_pts + [0]*nr_pts]],
                                return_tensors="pt").to(device)
         else:
             inputs = processor(image,

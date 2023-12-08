@@ -6,8 +6,13 @@ WORKDIR /GEO
 
 # Install Tmux and openssh
 RUN apt-get update && \
-  apt install -y tmux && \
-  apt install -y openssh-server
+  apt-get install -y libgl1 && \
+  apt install -y tmux
 
+# Install requirements
 COPY ./requirements.txt /GEO/requirements.txt
-RUN pip3 install -r /GEO/requirements.txt
+RUN pip install -r /GEO/requirements.txt
+
+# Install GroundingDINO dependencies
+COPY ./GroundingDINO /GEO/GroundingDINO
+RUN pip install -e /GEO/GroundingDINO

@@ -29,9 +29,9 @@ def main(args):
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
 
-    # Get test images filenames of images containing buildings
+    # Get test images filenames of images containing detections
     split_list = pd.read_csv(split_file)
-    img_list = split_list.filename[split_list.buildings==True]
+    img_list = split_list.filename[split_list.detections==True]
     print(f'total images: {len(img_list)}')
 
     # Load SAM Model

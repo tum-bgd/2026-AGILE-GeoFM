@@ -1,7 +1,7 @@
 .gitignore
 README.md
 data/
-models/
+results/
 .pth
 .png
 .ipynb

@@ -162,7 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
     parser.add_argument('--prompt', type=str, default='bb', choices=['bb', 'center_pt', 'multiple_pts', 'foreground_background_pts'])
     parser.add_argument('--nr_pts', type=int, default=20)
-    parser.add_argument('--out_dir', type=str, default='models/sam_gt_prompt/')
+    parser.add_argument('--out_dir', type=str, default='results/sam_gt_prompt/')
 
     args = parser.parse_args()
 

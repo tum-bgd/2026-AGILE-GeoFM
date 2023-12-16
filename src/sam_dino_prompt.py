@@ -111,7 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--text_prompt', type=str, default='building', help='format for multiple text prompts: "chair . person . dog ."')
     parser.add_argument('--box_threshold', type=float, default=0.35, help='choose the boxes whose highest similarities are higher than this value')
     parser.add_argument('--text_threshold', type=float, default=0.25, help='extract the words whose similarities are higher than this value')
-    parser.add_argument('--out_dir', type=str, default='models/sam_dino_prompt/')
+    parser.add_argument('--out_dir', type=str, default='results/sam_dino_prompt/')
 
     args = parser.parse_args()
 

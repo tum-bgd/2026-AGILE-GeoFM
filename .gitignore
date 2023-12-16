@@ -9,7 +9,7 @@ data/
 # Checkpoints
 *.pth
 *.pyc
-models/
+results/
 
 # Jupyter Notebook
 .ipynb_checkpoints

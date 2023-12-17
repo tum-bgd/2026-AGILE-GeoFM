@@ -2,6 +2,7 @@
 README.md
 data/
 results/
+.pt
 .pth
 .png
 .ipynb

@@ -7,6 +7,7 @@ data/
 *.tgz
 
 # Checkpoints
+*.pt
 *.pth
 *.pyc
 results/

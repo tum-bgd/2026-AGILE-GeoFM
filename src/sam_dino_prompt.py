@@ -4,12 +4,12 @@ import numpy as np
 import os
 import pandas as pd
 import torch
+import torchvision.transforms as T
 
 from PIL import Image
 from tqdm import tqdm
 from groundingdino.util.inference import load_model, predict
 from torchvision.ops import box_convert
-import torchvision.transforms as T
 from transformers import SamProcessor, SamModel
 
 from evaluation import Evaluation
@@ -41,11 +41,11 @@ def main(args):
 
     # Load GroundingDINO Model
     config_path = "./GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
-    checkpoint_path = "./GroundingDINO/weights/groundingdino_swint_ogc.pth"
+    checkpoint_path = "./weights/groundingdino_swint_ogc.pth"
     dino_model = load_model(model_config_path=config_path, model_checkpoint_path=checkpoint_path)
 
     # Transform image to tensor
-    transform = T.Compose([T.ToTensor()])
+    transform = T.Compose([T.ToTensor(), T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
     # Instantiate the Evaluator and Visualizer
     evaluation = Evaluation()
@@ -54,7 +54,7 @@ def main(args):
     # Prediction
     for _, img_name in enumerate(tqdm(img_list)):
         image = Image.open(os.path.join(img_dir, img_name))
-        image_tensor = transform(np.asarray(image))
+        image_tensor = transform(image)
 
         # generate bounding box prompts with GroundingDino to be fed into SAM
         boxes, _, _ = predict(

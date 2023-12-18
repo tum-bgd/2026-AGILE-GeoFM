@@ -2,6 +2,7 @@
 README.md
 data/
 results/
+weights/
 .pt
 .pth
 .png

@@ -1,18 +1,26 @@
-FROM python:3.10-bookworm AS python-geofm
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
 
+ENV BUILD_WITH_CUDA=True
+ENV TORCH_CUDA_ARCH_LIST="3.5;5.0;6.0;6.1;7.0;7.5;8.0;8.6+PTX"
+ENV CUDA_HOME /usr/local/cuda-11.7/
+
+ENV TZ=Europe/Berlin
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Install Tmux
+RUN apt-get update && \
+    apt-get install -y libgl1 libglib2.0-0 libsm6 libxext6 libxrender-dev git && \
+    apt install -y tmux
+
+WORKDIR /GEOtmp
 RUN pip install --upgrade pip
 
-WORKDIR /GEO
-
-# Install Tmux and openssh
-RUN apt-get update && \
-  apt-get install -y libgl1 && \
-  apt install -y tmux
-
 # Install requirements
-COPY ./requirements.txt /GEO/requirements.txt
-RUN pip install -r /GEO/requirements.txt
+COPY ./requirements.txt ./
+RUN pip install -r ./requirements.txt
 
 # Install GroundingDINO dependencies
-COPY ./GroundingDINO /GEO/GroundingDINO
-RUN pip install -e /GEO/GroundingDINO
+RUN git clone https://github.com/IDEA-Research/GroundingDINO.git
+RUN pip install -e ./GroundingDINO
+
+WORKDIR /GEO

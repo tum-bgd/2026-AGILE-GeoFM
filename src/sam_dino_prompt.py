@@ -68,7 +68,10 @@ def main(args):
         # Convert box prompts from xywh to xyxy
         w = h = 1024
         boxes = boxes * torch.Tensor([w, h, w, h])
-        prompts = box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").to_list()
+        prompts = box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").tolist()
+
+        if not prompts:
+            continue
 
         # transform mask into binary a mask
         # (there is a color fading between the outlines of the buildings)

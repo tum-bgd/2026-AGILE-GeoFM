@@ -1,10 +1,6 @@
 # GeoFM
 
 ## GroundingDINO
-### Clone Github Repository
-```
-git clone https://github.com/IDEA-Research/GroundingDINO.git
-```
 ### Download Checkpoints for GroundingDINO and RemoteClip
 ```
 mkdir ./weights
@@ -20,6 +16,7 @@ docker build -t python-geofm .
 Run and access the docker container
 ```
 docker run --gpus device=1 --name geofm-container -d -it --mount type=bind,source="$(pwd)",target=/GEO python-geofm
+docker cp geofm-container:/GEOtmp/GroundingDINO ./GroundingDINO
 docker exec -it geofm-container bash
 ```
 

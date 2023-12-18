@@ -70,29 +70,30 @@ def main(args):
         boxes = boxes * torch.Tensor([w, h, w, h])
         prompts = box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").tolist()
 
-        if not prompts:
-            continue
-
         # transform mask into binary a mask
         # (there is a color fading between the outlines of the buildings)
         gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
         gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
-        inputs = processor(image,
-                           input_boxes=[prompts],
-                           return_tensors="pt").to(device)
+        if prompts:
+            inputs = processor(image,
+                            input_boxes=[prompts],
+                            return_tensors="pt").to(device)
 
-        with torch.no_grad():
-            outputs = model(**inputs, multimask_output=False)
+            with torch.no_grad():
+                outputs = model(**inputs, multimask_output=False)
 
-        pred_mask = processor.image_processor.post_process_masks(
-            outputs.pred_masks.cpu().detach(),
-            inputs["original_sizes"].cpu(),
-            inputs["reshaped_input_sizes"].cpu()
-        )
+            pred_mask = processor.image_processor.post_process_masks(
+                outputs.pred_masks.cpu().detach(),
+                inputs["original_sizes"].cpu(),
+                inputs["reshaped_input_sizes"].cpu()
+            )
 
-        # assemble the multiple predicted masks for the same image into one
-        pred_mask = torch.any(pred_mask[0], dim=0).type(torch.uint8)
+            # assemble the multiple predicted masks for the same image into one
+            pred_mask = torch.any(pred_mask[0], dim=0).type(torch.uint8)
+
+        else:
+            pred_mask = torch.zeros(size=(1, w, h), dtype=torch.uint8)
 
         # Save the image
         pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')

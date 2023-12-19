@@ -37,13 +37,14 @@ def crop_image(image, mask):
 
 
 def main(args):
-    img_dir = args.img_dir
-    split_file = args.split_file
+    dataset = args.dataset
+    img_dir = f'data/{dataset}/'
+    split_file = f'data/{dataset}/{dataset}_data_split.csv'
     model_name = 'facebook/sam-vit-' + args.model_name
     points_per_side = args.points_per_side
     clip_model_name = args.clip_model_name
     label = args.label
-    out_dir = f'{args.out_dir}{args.model_name}/{args.points_per_side}-{args.clip_model_name}'
+    out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.points_per_side}'
 
     clip_threshold = 0.75
 
@@ -123,13 +124,12 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img_dir', type=str, default='data/bbd1k/',  help='specify the path of the input images')
-    parser.add_argument('--split_file', type=str, default='data/bbd1k/bbd1k_data_split.csv',  help='specify the path of the .csv data split file')
+    parser.add_argument('--dataset', type=str, default='bbd1k')
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
     parser.add_argument('--points_per_side', type=int, default='128', help='number of points per side for grid sampling with SAM automatic')
     parser.add_argument('--clip_model_name', type=str, default='ViT-B-32', choices=['ViT-B-32', 'ViT-L-14'])
     parser.add_argument('--label', type=str, default='building', choices=['building', 'surface water'])
-    parser.add_argument('--out_dir', type=str, default='results/sam_automatic_label/')
+    parser.add_argument('--out_dir', type=str, default='results/')
 
     args = parser.parse_args()
 

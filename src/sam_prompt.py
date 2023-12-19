@@ -71,15 +71,16 @@ def main(args):
     global prompt_type
     global nr_pts
 
-    img_dir = args.img_dir
-    split_file = args.split_file
+    dataset = args.dataset
+    img_dir = f'data/{dataset}/'
+    split_file = f'data/{dataset}/{dataset}_data_split.csv'
     model_name = 'facebook/sam-vit-' + args.model_name
     prompt_type = args.prompt
     nr_pts = args.nr_pts
     if prompt_type == 'multiple_pts' or prompt_type == 'foreground_background_pts':
-        out_dir = f'{args.out_dir}{args.model_name}/{args.prompt}_{args.nr_pts}/'
+        out_dir = f'{args.out_dir}/{dataset}/sam_gt_prompt/{args.model_name}/{args.prompt}_{args.nr_pts}/'
     else:
-        out_dir = f'{args.out_dir}{args.model_name}/{args.prompt}/'
+        out_dir = f'{args.out_dir}/{dataset}/sam_gt_prompt/{args.model_name}/{args.prompt}/'
 
     # Create masks output folder
     if not os.path.isdir(out_dir):
@@ -157,12 +158,11 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img_dir', type=str, default='data/bbd1k/',  help='specify the path of the input images')
-    parser.add_argument('--split_file', type=str, default='data/bbd1k/bbd1k_data_split.csv',  help='specify the path of the .csv data split file')
+    parser.add_argument('--dataset', type=str, default='bbd1k')
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
     parser.add_argument('--prompt', type=str, default='bb', choices=['bb', 'center_pt', 'multiple_pts', 'foreground_background_pts'])
     parser.add_argument('--nr_pts', type=int, default=20)
-    parser.add_argument('--out_dir', type=str, default='results/sam_gt_prompt/')
+    parser.add_argument('--out_dir', type=str, default='results/')
 
     args = parser.parse_args()
 

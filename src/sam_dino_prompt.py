@@ -17,13 +17,15 @@ from visualisation import Visualizer
 
 
 def main(args):
-    img_dir = args.img_dir
-    split_file = args.split_file
+    dataset = args.dataset
+    img_dir = f'data/{dataset}/'
+    split_file = f'data/{dataset}/{dataset}_data_split.csv'
     model_name = 'facebook/sam-vit-' + args.model_name
+    dino_model_name = args.dino_model_name
     text_prompt = args.text_prompt
     box_threshold = args.box_threshold
     text_threshold = args.text_threshold
-    out_dir = f'{args.out_dir}{args.model_name}/{args.text_prompt}/'
+    out_dir = f'{args.out_dir}/{dataset}/sam_dino_prompt/{args.dino_model_name}/{args.text_prompt}/'
 
     # Create masks output folder
     if not os.path.isdir(out_dir):
@@ -40,8 +42,12 @@ def main(args):
     model = SamModel.from_pretrained(model_name).to(device)
 
     # Load GroundingDINO Model
-    config_path = "./GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
-    checkpoint_path = "./weights/groundingdino_swint_ogc.pth"
+    if dino_model_name == 'SwinT':
+        config_path = "./GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
+        checkpoint_path = "./weights/groundingdino_swint_ogc.pth"
+    else:
+        config_path = "./GroundingDINO/groundingdino/config/GroundingDINO_SwinB_cfg.py"
+        checkpoint_path = "./weights/groundingdino_swinb_cogcoor.pth"
     dino_model = load_model(model_config_path=config_path, model_checkpoint_path=checkpoint_path)
 
     # Transform image to tensor
@@ -113,13 +119,13 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img_dir', type=str, default='data/bbd1k/',  help='specify the path of the input images')
-    parser.add_argument('--split_file', type=str, default='data/bbd1k/bbd1k_data_split.csv',  help='specify the path of the .csv data split file')
+    parser.add_argument('--dataset', type=str, default='bbd1k')
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
+    parser.add_argument('--dino_model_name', type=str, default='SwinT', choices=['SwinT', 'SwinB'])
     parser.add_argument('--text_prompt', type=str, default='building', help='format for multiple text prompts: "chair . person . dog ."')
     parser.add_argument('--box_threshold', type=float, default=0.35, help='choose the boxes whose highest similarities are higher than this value')
     parser.add_argument('--text_threshold', type=float, default=0.25, help='extract the words whose similarities are higher than this value')
-    parser.add_argument('--out_dir', type=str, default='results/sam_dino_prompt/')
+    parser.add_argument('--out_dir', type=str, default='results/')
 
     args = parser.parse_args()
 

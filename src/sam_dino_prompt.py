@@ -81,10 +81,6 @@ def main(args):
         gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
         gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
-        for i, prompt in enumerate(prompts):
-            if (prompt[2]-prompt[0] > 950) or (prompt[3]-prompt[1] > 950):
-                prompts.pop(i)
-
         if prompts:
             inputs = processor(image,
                             input_boxes=[prompts],

@@ -136,7 +136,7 @@ def main(args):
         )
 
         # drop the masks that are too large compared to the ground truth
-        if prompt_type != 'foreground_background_pts':
+        if (dataset != 'water1k') and (prompt_type != 'foreground_background_pts'):
             pred_mask = pred_mask[0][torch.sum(pred_mask[0], dim=(1, 2, 3)) <= 5 * torch.tensor(areas)]
         else:
             pred_mask = pred_mask[0]

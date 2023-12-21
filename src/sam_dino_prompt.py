@@ -38,6 +38,7 @@ def main(args):
 
     # Load SAM Model
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"The device used is {device}")
     processor = SamProcessor.from_pretrained(model_name)
     model = SamModel.from_pretrained(model_name).to(device)
 
@@ -80,6 +81,13 @@ def main(args):
         # (there is a color fading between the outlines of the buildings)
         gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
         gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
+
+        # In the case of bbd1k, we have the domain knowledge that no building spans the entire image patch
+        # In many cases, Grounding DINO returns a bb spanning the entire image, these are therefore removed
+        if dataset == 'bbd1k':
+            for i, prompt in reversed(list(enumerate(prompts))):
+                if (prompt[2]-prompt[0] > 950) or (prompt[3]-prompt[1] > 950):
+                    prompts.pop(i)
 
         if prompts:
             inputs = processor(image,

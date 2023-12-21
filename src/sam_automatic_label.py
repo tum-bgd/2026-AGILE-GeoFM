@@ -59,6 +59,7 @@ def main(args):
 
     # Load SAM Model
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"The device used is {device}")
     generator = pipeline("mask-generation", model=model_name, device=device)
 
     # Load OpenClip

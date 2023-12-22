@@ -19,7 +19,7 @@ from visualisation import Visualizer
 def main(args):
     dataset = args.dataset
     img_dir = f'data/{dataset}/'
-    split_file = f'data/{dataset}/{dataset}_data_split.csv'
+    filter_file = f'data/{dataset}/{dataset}_data_filtered.csv'
     model_name = 'facebook/sam-vit-' + args.model_name
     dino_model_name = args.dino_model_name
     text_prompt = args.text_prompt
@@ -32,8 +32,8 @@ def main(args):
         os.makedirs(out_dir)
 
     # Get test images filenames of images containing detections
-    split_list = pd.read_csv(split_file)
-    img_list = split_list.filename[split_list.detections==True]
+    filter_list = pd.read_csv(filter_file)
+    img_list = filter_list.filename[filter_list.detections==True]
     print(f'total images: {len(img_list)}')
 
     # Load SAM Model
@@ -113,7 +113,7 @@ def main(args):
         pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')
         visualizer.save(image, prompts, gt_mask, pred_mask[0], pred_name)
 
-        # Evaluate the current batch
+        # Evaluate
         gt_mask = torch.tensor(gt_mask).unsqueeze(0)
         evaluation.evaluate(gt_mask, pred_mask)
 

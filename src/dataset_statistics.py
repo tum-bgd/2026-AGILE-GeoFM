@@ -20,12 +20,12 @@ if __name__ == '__main__':
         label_size=[]
         bb_size=[]
         bb_label_relation=[]
-        for file in glob.iglob(path+"/*split*"):
-            # get files which are not filtered in the split list
-            split_list = pd.read_csv(file)
-            img_list = split_list.filename[split_list.detections==True]
+        for file in glob.iglob(path+"/*filtered*"):
+            # get files which are not filtered in the filtered list
+            filter_list = pd.read_csv(file)
+            img_list = filter_list.filename[filter_list.detections==True]
             label_list=[img.split("-image", maxsplit=1)[0]+'-osm.png' for img in img_list]
-            print(f'total images filtered: {len(img_list)}/{len(split_list)}, Amount of labels to calc statistics on: {len(label_list)}')
+            print(f'total images filtered: {len(img_list)}/{len(filter_list)}, Amount of labels to calc statistics on: {len(label_list)}')
         for file in tqdm(label_list):
             label= cv2.imread(path+'/'+file, 0).astype(np.uint8)
             mask = label == 0 # as labels are inverse in our data, that means interesting areas are black

@@ -7,11 +7,9 @@ import pandas as pd
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Create .csv file with data train/val/test split.')
+    parser = argparse.ArgumentParser()
     parser.add_argument('--img_dir', type=str, default='data/bbd1k/',  help='specify the root path of images')
-    parser.add_argument('--split_file', type=str, default='bbd1k_data_split.csv',  help='specify the name of the .csv output')
-    parser.add_argument('--test_ratio', type=float, default=0.2, help='proportion of the dataset to include in the test split.')
-    parser.add_argument('--val_ratio', type=float, default=0.15, help='proportion of the dataset to include in the validation split')
+    parser.add_argument('--filter_file', type=str, default='bbd1k_data_filtered.csv',  help='specify the name of the .csv output')
     args = parser.parse_args()
 
     # There are 18 OSM masks without a corresponding image in BBD, that is why, I use images to extract filename list
@@ -31,4 +29,4 @@ if __name__ == "__main__":
             if np.any(mask==0):
                 df.loc[idx, "detections"] = True
 
-    df.to_csv(args.img_dir + args.split_file, index=False)
+    df.to_csv(args.img_dir + args.filter_file, index=False)

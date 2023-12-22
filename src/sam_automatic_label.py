@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 
 from PIL import Image
-from scipy.signal import convolve2d
+from scipy.ndimage import maximum_filter
 from tqdm import tqdm
 from transformers import pipeline
 
@@ -48,8 +48,6 @@ def main(args):
     clip_threshold = args.clip_threshold
     out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.points_per_side}-{args.clip_threshold}'
 
-    kernel = np.ones((21, 21))
-
     # Create masks output folder
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
@@ -77,7 +75,7 @@ def main(args):
 
     # Instantiate the Evaluator and Visualizer
     evaluation = Evaluation()
-    visualizer = Visualizer('text_prompt', None)
+    visualizer = Visualizer('auto_sam_classified', None)
 
     # Prediction
     for _, img_name in enumerate(tqdm(img_list)):
@@ -89,13 +87,13 @@ def main(args):
         gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
         # generate all the masks with SAM automatic
-        outputs = generator(image, points_per_crop=points_per_side, points_per_batch=512)
+        outputs = generator(image, points_per_crop=points_per_side, points_per_batch=1024)
         masks = outputs["masks"]
 
         # classify the generated masks
         pos_masks = []
         for mask in masks:
-            mask_buffered = convolve2d(mask, kernel, mode='same')>0
+            mask_buffered = maximum_filter(mask, size=21, mode='constant', cval=0)>0
             input = crop_image(np.array(image), mask_buffered)
 
             mask_processed = preprocess(input).unsqueeze(0)
@@ -111,8 +109,11 @@ def main(args):
                 pos_masks.append(torch.tensor(mask))
 
         # assemble the multiple predicted and positively classified masks into one
-        torch.stack(pos_masks, dim=0)
-        pred_mask = torch.any(pred_mask, dim=0, keepdim=True).type(torch.uint8)
+        if pos_masks:
+            pred_mask = torch.stack(pos_masks, dim=0)
+            pred_mask = torch.any(pred_mask, dim=0, keepdim=True).type(torch.uint8)
+        else:
+            pred_mask = torch.zeros((1, 1024, 1024), dtype=torch.uint8)
 
         # Save the image
         pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')

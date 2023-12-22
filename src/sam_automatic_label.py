@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 
 from PIL import Image
+from scipy.signal import convolve2d
 from tqdm import tqdm
 from transformers import pipeline
 
@@ -39,22 +40,23 @@ def crop_image(image, mask):
 def main(args):
     dataset = args.dataset
     img_dir = f'data/{dataset}/'
-    split_file = f'data/{dataset}/{dataset}_data_split.csv'
+    filter_file = f'data/{dataset}/{dataset}_data_filtered.csv'
     model_name = 'facebook/sam-vit-' + args.model_name
     points_per_side = args.points_per_side
     clip_model_name = args.clip_model_name
     label = args.label
-    out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.points_per_side}'
+    clip_threshold = args.clip_threshold
+    out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.points_per_side}-{args.clip_threshold}'
 
-    clip_threshold = 0.75
+    kernel = np.ones((21, 21))
 
     # Create masks output folder
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
 
     # Get test images filenames of images containing detections
-    split_list = pd.read_csv(split_file)
-    img_list = split_list.filename[split_list.detections==True]
+    filter_list = pd.read_csv(filter_file)
+    img_list = filter_list.filename[filter_list.detections==True]
     print(f'total images: {len(img_list)}')
 
     # Load SAM Model
@@ -87,13 +89,14 @@ def main(args):
         gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
         # generate all the masks with SAM automatic
-        outputs = generator(image, points_per_crop=points_per_side, points_per_batch=256)
+        outputs = generator(image, points_per_crop=points_per_side, points_per_batch=512)
         masks = outputs["masks"]
 
         # classify the generated masks
         pos_masks = []
         for mask in masks:
-            input = crop_image(np.array(image), mask)
+            mask_buffered = convolve2d(mask, kernel, mode='same')>0
+            input = crop_image(np.array(image), mask_buffered)
 
             mask_processed = preprocess(input).unsqueeze(0)
             with torch.no_grad(), torch.cuda.amp.autocast():
@@ -115,7 +118,7 @@ def main(args):
         pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')
         visualizer.save(image, masks, gt_mask, pred_mask[0], pred_name)
 
-        # Evaluate the current batch
+        # Evaluate
         gt_mask = torch.tensor(gt_mask).unsqueeze(0)
         evaluation.evaluate(gt_mask, pred_mask)
 
@@ -129,6 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
     parser.add_argument('--points_per_side', type=int, default='128', help='number of points per side for grid sampling with SAM automatic')
     parser.add_argument('--clip_model_name', type=str, default='ViT-B-32', choices=['ViT-B-32', 'ViT-L-14'])
+    parser.add_argument('--clip_threshold', type=float, default='0.7')
     parser.add_argument('--label', type=str, default='building', choices=['building', 'surface water'])
     parser.add_argument('--out_dir', type=str, default='results/')
 

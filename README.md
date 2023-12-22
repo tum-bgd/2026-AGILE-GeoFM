@@ -26,7 +26,7 @@ Run the evaluation of the models like specified in the following section
 ## Models
 1. Evaluate SAM with prompts from ground-truth masks
     ```
-    python3 src/sam_prompt.py
+    python3 src/sam_prompt.py --dataset bbd1k
     ```
     1. `--prompt bb` : bounding-boxes
 
@@ -38,10 +38,10 @@ Run the evaluation of the models like specified in the following section
 
 2. Evaluate SAM with bounding box prompt generated from text prompts run through GroundingDINO:
     ```
-    python3 src/sam_dino_prompt.py --text_prompt building
+    python3 src/sam_dino_prompt.py --dataset bbd1k --text_prompt building
     ```
 
 3. Evaluate classified automatic SAM for the wanted label:
     ```
-    python3 src/sam_automatic_label.py --label building
+    python3 src/sam_automatic_label.py --dataset bbd1k --label building
     ```

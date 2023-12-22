@@ -93,7 +93,7 @@ def main(args):
         # classify the generated masks
         pos_masks = []
         for mask in masks:
-            mask_buffered = maximum_filter(mask, size=21, mode='constant', cval=0)>0
+            mask_buffered = maximum_filter(mask, size=11, mode='constant', cval=0)>0
             input = crop_image(np.array(image), mask_buffered)
 
             mask_processed = preprocess(input).unsqueeze(0)

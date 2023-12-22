@@ -123,7 +123,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='bbd1k')
+    parser.add_argument('--dataset', type=str, default='bbd1k', choices=['bbd1k', 'water1k'])
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
     parser.add_argument('--dino_model_name', type=str, default='SwinT', choices=['SwinT', 'SwinB'])
     parser.add_argument('--text_prompt', type=str, default='building', help='format for multiple text prompts: "chair . person . dog ."')

@@ -87,7 +87,7 @@ def main(args):
         gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
         # generate all the masks with SAM automatic
-        outputs = generator(image, points_per_crop=points_per_side, points_per_batch=1024)
+        outputs = generator(image, points_per_crop=points_per_side, points_per_batch=516)
         masks = outputs["masks"]
 
         # classify the generated masks
@@ -129,12 +129,12 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='bbd1k')
+    parser.add_argument('--dataset', type=str, default='bbd1k', choices=['bbd1k', 'water1k'])
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
-    parser.add_argument('--points_per_side', type=int, default='128', help='number of points per side for grid sampling with SAM automatic')
+    parser.add_argument('--points_per_side', type=int, default='32', help='number of points per side for grid sampling with SAM automatic')
     parser.add_argument('--clip_model_name', type=str, default='ViT-B-32', choices=['ViT-B-32', 'ViT-L-14'])
     parser.add_argument('--clip_threshold', type=float, default='0.7')
-    parser.add_argument('--label', type=str, default='building', choices=['building', 'surface water'])
+    parser.add_argument('--label', type=str, default='building')
     parser.add_argument('--out_dir', type=str, default='results/')
 
     args = parser.parse_args()

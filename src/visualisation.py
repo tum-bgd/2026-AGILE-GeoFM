@@ -7,12 +7,12 @@ class Visualizer():
         self.prompt_type = prompt_type
         self.prompt_info = prompt_info
         self.predictions = {
-            'bb': "Bounding Box",
-            'center_pt': "Representative Point",
-            'multiple_pts': f"{prompt_info} Sampled Points",
-            'foreground_background_pts': f"{prompt_info} Fore-/Background Points",
-            'text_prompt': "DINO Bounding Box",
-            'auto_sam_classified': "SAM Automatic Classified"
+            'bb': "Bounding Box Prediction",
+            'center_pt': "Representative Point Prediction",
+            'multiple_pts': f"{prompt_info} Sampled Points Prediction",
+            'foreground_background_pts': f"{prompt_info} Fore-/Background Points Prediction",
+            'text_prompt': "Grounding DINO Prompted SAM",
+            'auto_sam_classified': "RemoteClip Classified SAM Automatic"
         }
 
     def show_prompts(self, ax, prompts):
@@ -47,7 +47,7 @@ class Visualizer():
         axes[0].imshow(image)
         self.show_prompts(axes[0], prompts)
         if self.prompt_type == 'text_prompt':
-            axes[0].title.set_text(f"DINO [{self.prompt_info}] Prompted Orthophoto")
+            axes[0].title.set_text(f"Grounding DINO Predicted Prompts")
         elif self.prompt_type == 'auto_sam_classified':
             axes[0].title.set_text("SAM Automatic Orthophoto")
         else:
@@ -57,13 +57,15 @@ class Visualizer():
         axes[1].title.set_text("Ground Truth")
 
         axes[2].imshow(pred_mask, cmap='binary')
-        axes[2].title.set_text(f"{self.predictions[self.prompt_type]} Prediction")
+        axes[2].title.set_text(self.predictions[self.prompt_type])
 
         for ax in axes:
             ax.set_autoscale_on(False)
             ax.axes.get_xaxis().set_visible(False)
             ax.axes.get_yaxis().set_visible(False)
             plt.setp(ax.spines.values(), color='gray')
+            ax.set_xlim([0, 1024])
+            ax.set_ylim([1024, 0])
 
         plt.savefig(pred_name, bbox_inches='tight')
         plt.close()

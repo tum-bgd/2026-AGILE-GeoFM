@@ -46,7 +46,7 @@ def main(args):
     clip_model_name = args.clip_model_name
     label = args.label
     clip_threshold = args.clip_threshold
-    out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.points_per_side}-{args.clip_threshold}'
+    out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.label}-{args.points_per_side}-{args.clip_threshold}/'
 
     # Create masks output folder
     if not os.path.isdir(out_dir):
@@ -77,51 +77,58 @@ def main(args):
     evaluation = Evaluation()
     visualizer = Visualizer('auto_sam_classified', None)
 
-    # Prediction
-    for _, img_name in enumerate(tqdm(img_list)):
-        image = Image.open(os.path.join(img_dir, img_name))
-
-        # transform mask into binary a mask
-        # (there is a color fading between the outlines of the buildings)
-        gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
-        gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
+    batch_size = 64
+    for i in tqdm(range(0, len(img_list), batch_size)):
+        images = [Image.open(os.path.join(img_dir, img_name)) for img_name in img_list[i:i+batch_size]]
 
         # generate all the masks with SAM automatic
-        outputs = generator(image, points_per_crop=points_per_side, points_per_batch=516)
-        masks = outputs["masks"]
+        outputs = generator(images, points_per_crop=points_per_side, points_per_batch=128)
 
-        # classify the generated masks
-        pos_masks = []
-        for mask in masks:
-            mask_buffered = maximum_filter(mask, size=11, mode='constant', cval=0)>0
-            input = crop_image(np.array(image), mask_buffered)
+        # Prediction
+        for j, img_name in enumerate(tqdm(img_list[i:i+batch_size])):
+            # transform mask into binary a mask
+            # (there is a color fading between the outlines of the buildings)
+            gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
+            gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
 
-            mask_processed = preprocess(input).unsqueeze(0)
+            image = images[j]
+            masks = outputs[j]["masks"]
+
+            # classify the generated masks
+            all_masks = []
+            all_masks_processed = []
+            for mask in masks:
+                all_masks.append(torch.tensor(mask))
+
+                mask_buffered = maximum_filter(mask, size=11, mode='constant', cval=0)>0
+                input = crop_image(np.array(image), mask_buffered)
+                all_masks_processed.append(preprocess(input))
+
+            all_masks = torch.stack(all_masks)
+            all_masks_processed = torch.tensor(np.stack(all_masks_processed))
             with torch.no_grad(), torch.cuda.amp.autocast():
-                image_features = clip_model.encode_image(mask_processed.to(device))
+                image_features = clip_model.encode_image(all_masks_processed.to(device))
                 text_features = clip_model.encode_text(text.to(device))
 
                 image_features /= image_features.norm(dim=-1, keepdim=True)
                 text_features /= text_features.norm(dim=-1, keepdim=True)
-                text_probs = (100.0 * image_features @ text_features.T).softmax(dim=-1).cpu().numpy()[0]
+                text_probs = (100.0 * image_features @ text_features.T).softmax(dim=-1).cpu().numpy()
 
-            if text_probs[0] >= clip_threshold:
-                pos_masks.append(torch.tensor(mask))
+            pred_mask = all_masks[text_probs[:, 0] >= clip_threshold]
 
-        # assemble the multiple predicted and positively classified masks into one
-        if pos_masks:
-            pred_mask = torch.stack(pos_masks, dim=0)
-            pred_mask = torch.any(pred_mask, dim=0, keepdim=True).type(torch.uint8)
-        else:
-            pred_mask = torch.zeros((1, 1024, 1024), dtype=torch.uint8)
+            # assemble the multiple predicted and positively classified masks into one
+            if pred_mask.numel():
+                pred_mask = torch.any(pred_mask, dim=0, keepdim=True).type(torch.uint8)
+            else:
+                pred_mask = torch.zeros((1, 1024, 1024), dtype=torch.uint8)
 
-        # Save the image
-        pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')
-        visualizer.save(image, masks, gt_mask, pred_mask[0], pred_name)
+            # Save the image
+            pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')
+            visualizer.save(image, masks, gt_mask, pred_mask[0], pred_name)
 
-        # Evaluate
-        gt_mask = torch.tensor(gt_mask).unsqueeze(0)
-        evaluation.evaluate(gt_mask, pred_mask)
+            # Evaluate
+            gt_mask = torch.tensor(gt_mask).unsqueeze(0)
+            evaluation.evaluate(gt_mask, pred_mask)
 
     # Evaluation
     evaluation.evaluate_all(out_dir)

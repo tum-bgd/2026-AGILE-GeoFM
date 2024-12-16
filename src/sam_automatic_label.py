@@ -5,6 +5,7 @@ import open_clip
 import os
 import pandas as pd
 import torch
+import torch.nn as nn
 
 from PIL import Image
 from scipy.ndimage import maximum_filter
@@ -46,7 +47,16 @@ def main(args):
     clip_model_name = args.clip_model_name
     label = args.label
     clip_threshold = args.clip_threshold
-    out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.label}-{args.points_per_side}-{args.clip_threshold}/'
+    fewshot = args.fewshot
+    shots = args.shots
+    cache_dir = args.cache_dir
+    beta = args.beta
+    alpha = args.alpha
+
+    if fewshot:
+        out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt_fewshot/{args.clip_model_name}/{args.label}-{args.points_per_side}-{args.clip_threshold}/'
+    else:
+        out_dir = f'{args.out_dir}/{dataset}/sam_auto_prompt/{args.clip_model_name}/{args.label}-{args.points_per_side}-{args.clip_threshold}/'
 
     # Create masks output folder
     if not os.path.isdir(out_dir):
@@ -63,75 +73,100 @@ def main(args):
     generator = pipeline("mask-generation", model=model_name, device=device)
 
     # Load OpenClip
-    clip_model, _, preprocess = open_clip.create_model_and_transforms(clip_model_name)
+    if clip_model_name == 'ViT-bigG-14':
+        clip_model, _, preprocess = open_clip.create_model_and_transforms(clip_model_name, pretrained='laion2b_s39b_b160k')
+    else:
+        clip_model, _, preprocess = open_clip.create_model_and_transforms(clip_model_name)
+        ckpt = torch.load(f"weights/RemoteCLIP-{clip_model_name}.pt", map_location="cpu")
+        message = clip_model.load_state_dict(ckpt)
+        print(message)
+
     tokenizer = open_clip.get_tokenizer(clip_model_name)
-    ckpt = torch.load(f"weights/RemoteCLIP-{clip_model_name}.pt", map_location="cpu")
-    message = clip_model.load_state_dict(ckpt)
-    print(message)
     clip_model = clip_model.cuda().eval()
 
-    text_queries = [f"satellite image of a {label}", "satellite image of background"]
-    text = tokenizer(text_queries)
+    text_queries = [f"satellite image of {label}", "satellite image of background"]
+    with torch.no_grad():
+        texts = tokenizer(text_queries)
+        text_features = clip_model.encode_text(texts.to(device))
+        text_features /= text_features.norm(dim=-1, keepdim=True)
+
+    # Load Tip-Adapter-F cache and adapter
+    if fewshot:
+        cache_keys = torch.load(os.path.join(cache_dir, 'keys_' + str(shots) + 'shots_' + clip_model_name + '.pt'))
+        cache_values = torch.load(os.path.join(cache_dir, 'values_' + str(shots) + 'shots_' + clip_model_name + '.pt'))
+        adapter = nn.Linear(cache_keys.shape[0], cache_keys.shape[1], bias=False).to(next(clip_model.parameters()).dtype).cuda()
+        adapter.weight = torch.load(os.path.join(cache_dir, 'best_F_' + str(shots) + 'shots_' + clip_model_name + '.pt'))
+        adapter.eval()
+        print('Tip-Adapter-F models loaded!')
 
     # Instantiate the Evaluator and Visualizer
     evaluation = Evaluation()
     visualizer = Visualizer('auto_sam_classified', None)
 
-    batch_size = 64
-    for i in tqdm(range(0, len(img_list), batch_size)):
-        images = [Image.open(os.path.join(img_dir, img_name)) for img_name in img_list[i:i+batch_size]]
+    i = 0
+    # Prediction
+    for _, img_name in enumerate(tqdm(img_list)):
+        # transform mask into binary a mask
+        # (there is a color fading between the outlines of the buildings)
+        gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
+        gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
+
+        image = Image.open(os.path.join(img_dir, img_name))
 
         # generate all the masks with SAM automatic
-        outputs = generator(images, points_per_crop=points_per_side, points_per_batch=128)
+        try:
+            outputs = generator(image, points_per_crop=points_per_side, points_per_batch=512)
+        except:
+            i += 1
+            continue
+        masks = outputs["masks"]
 
-        # Prediction
-        for j, img_name in enumerate(tqdm(img_list[i:i+batch_size])):
-            # transform mask into binary a mask
-            # (there is a color fading between the outlines of the buildings)
-            gt_mask = cv2.imread(os.path.join(img_dir, img_name[:-9] + 'osm.png'), 0).astype(np.uint8)
-            gt_mask = cv2.threshold(gt_mask, 127, 1, cv2.THRESH_BINARY_INV)[1]
+        # classify the generated masks
+        all_masks = []
+        all_masks_processed = []
+        for mask in masks:
+            all_masks.append(torch.tensor(mask))
 
-            image = images[j]
-            masks = outputs[j]["masks"]
+            mask_buffered = maximum_filter(mask, size=11, mode='constant', cval=0)>0
+            input = crop_image(np.array(image), mask_buffered)
+            all_masks_processed.append(preprocess(input))
 
-            # classify the generated masks
-            all_masks = []
-            all_masks_processed = []
-            for mask in masks:
-                all_masks.append(torch.tensor(mask))
+        all_masks = torch.stack(all_masks)
+        all_masks_processed = torch.tensor(np.stack(all_masks_processed))
 
-                mask_buffered = maximum_filter(mask, size=11, mode='constant', cval=0)>0
-                input = crop_image(np.array(image), mask_buffered)
-                all_masks_processed.append(preprocess(input))
+        with torch.no_grad(), torch.cuda.amp.autocast():
+            image_features = clip_model.encode_image(all_masks_processed.to(device))
+            image_features /= image_features.norm(dim=-1, keepdim=True)
 
-            all_masks = torch.stack(all_masks)
-            all_masks_processed = torch.tensor(np.stack(all_masks_processed))
-            with torch.no_grad(), torch.cuda.amp.autocast():
-                image_features = clip_model.encode_image(all_masks_processed.to(device))
-                text_features = clip_model.encode_text(text.to(device))
-
-                image_features /= image_features.norm(dim=-1, keepdim=True)
-                text_features /= text_features.norm(dim=-1, keepdim=True)
-                text_probs = (100.0 * image_features @ text_features.T).softmax(dim=-1).cpu().numpy()
-
-            pred_mask = all_masks[text_probs[:, 0] >= clip_threshold]
-
-            # assemble the multiple predicted and positively classified masks into one
-            if pred_mask.numel():
-                pred_mask = torch.any(pred_mask, dim=0, keepdim=True).type(torch.uint8)
+            if fewshot:
+                affinity = adapter(image_features)
+                cache_logits = ((-1) * (beta - beta * affinity)).exp() @ cache_values
+                clip_logits = 100. * image_features @ text_features.T
+                logits = clip_logits + cache_logits * alpha
             else:
-                pred_mask = torch.zeros((1, 1024, 1024), dtype=torch.uint8)
+                logits = 100.0 * image_features @ text_features.T
 
-            # Save the image
-            pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')
-            visualizer.save(image, masks, gt_mask, pred_mask[0], pred_name)
+            text_probs = logits.softmax(dim=-1).cpu().numpy()
 
-            # Evaluate
-            gt_mask = torch.tensor(gt_mask).unsqueeze(0)
-            evaluation.evaluate(gt_mask, pred_mask)
+        pred_mask = all_masks[text_probs[:, 0] >= clip_threshold]
+
+        # assemble the multiple predicted and positively classified masks into one
+        if pred_mask.numel():
+            pred_mask = torch.any(pred_mask, dim=0, keepdim=True).type(torch.uint8)
+        else:
+            pred_mask = torch.zeros((1, 1024, 1024), dtype=torch.uint8)
+
+        # Save the image
+        pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')
+        # visualizer.save(image, masks, gt_mask, pred_mask[0], pred_name)
+
+        # Evaluate
+        gt_mask = torch.tensor(gt_mask).unsqueeze(0)
+        evaluation.evaluate(gt_mask, pred_mask)
 
     # Evaluation
     evaluation.evaluate_all(out_dir)
+    print('Exceptions recorded: ', i)
 
 
 if __name__ == '__main__':
@@ -139,10 +174,15 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='bbd1k', choices=['bbd1k', 'water1k'])
     parser.add_argument('--model_name', type=str, default='large', choices=['base', 'large', 'huge'])
     parser.add_argument('--points_per_side', type=int, default='32', help='number of points per side for grid sampling with SAM automatic')
-    parser.add_argument('--clip_model_name', type=str, default='ViT-B-32', choices=['ViT-B-32', 'ViT-L-14'])
+    parser.add_argument('--clip_model_name', type=str, default='ViT-B-32', choices=['ViT-B-32', 'ViT-L-14', 'ViT-bigG-14'])
     parser.add_argument('--clip_threshold', type=float, default='0.7')
     parser.add_argument('--label', type=str, default='building')
     parser.add_argument('--out_dir', type=str, default='results/')
+    parser.add_argument('--fewshot', type=bool, default=False)
+    parser.add_argument('--cache_dir', type=str, default='data/bbd1k_cache/')
+    parser.add_argument('--shots', type=int, default=8)
+    parser.add_argument('--beta', type=float, default=5)
+    parser.add_argument('--alpha', type=float, default=1)
 
     args = parser.parse_args()
 

@@ -1,3 +1,5 @@
+import os
+
 from torchmetrics.classification import BinaryAccuracy, BinaryF1Score, \
     BinaryJaccardIndex, BinaryPrecision, BinaryRecall
 
@@ -22,7 +24,7 @@ class Evaluation():
 
     def evaluate_all(self, out_dir):
         # Compute from the metric object the global result
-        with open(out_dir + 'evaluation.txt', 'a') as f:
+        with open(os.path.join(out_dir, 'evaluation.txt'), 'a') as f:
             print(f'Accuracy: {self.accuracy.compute()}', file=f)
             print(f'F1: {self.f1.compute()}', file=f)
             print(f'IoU: {self.iou.compute()}', file=f)

@@ -1,6 +1,6 @@
 # GeoFM
 
-## GroundingDINO
+## Models
 ### Download Checkpoints for GroundingDINO and RemoteClip
 ```
 mkdir ./weights
@@ -9,6 +9,23 @@ wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-
 wget -q https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt -P ./weights/
 wget -q https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-L-14.pt -P ./weights/
 ```
+
+
+## Data
+Data has to be downloaded and saved into a folder `/data`
+### BBD
+BBD data was originally provided here: https://doi.org/10.14459/2023mp1709451
+
+The preprocessed files, which are tiled and cleaned to not contain empty images can be found here: https://figshare.com/s/83c2cead0d8fcc65dc6c
+
+### Surface Water
+The surface water dataset was originally proposed here: https://doi.org/10.11588/data/AAKAF9
+
+The preprocessed files which are tiled, restricted to three visible bands and preprocessed can be found here: https://figshare.com/s/a359b71447c18d02b9db
+
+The preprocessing script is in `src/prepare_surface_water.py`.
+
+
 ## Docker Environment
 Build the docker image
 ```

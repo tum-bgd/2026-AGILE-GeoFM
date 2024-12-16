@@ -88,6 +88,10 @@ def main(args):
             for i, prompt in reversed(list(enumerate(prompts))):
                 if (prompt[2]-prompt[0] > 950) or (prompt[3]-prompt[1] > 950):
                     prompts.pop(i)
+        else:
+            for i, prompt in reversed(list(enumerate(prompts))):
+                if (prompt[2]-prompt[0] > 950) and (prompt[3]-prompt[1] > 950):
+                    prompts.pop(i)
 
         if prompts:
             inputs = processor(image,

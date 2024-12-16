@@ -158,7 +158,7 @@ def main(args):
 
         # Save the image
         pred_name = os.path.join(out_dir, img_name[:-9] + 'pred.png')
-        # visualizer.save(image, masks, gt_mask, pred_mask[0], pred_name)
+        visualizer.save(image, masks, gt_mask, pred_mask[0], pred_name)
 
         # Evaluate
         gt_mask = torch.tensor(gt_mask).unsqueeze(0)

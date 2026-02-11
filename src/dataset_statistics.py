@@ -40,4 +40,8 @@ if __name__ == '__main__':
             bb_size.extend(bb_areas)
             bb_label_relation.extend([i / j for i, j in zip(label_size, bb_areas)])
 
-        print(f"Avg. Label Density {(np.array(label_density).mean())}, \nAvg. amount of labels per patch {np.array(labels_per_image).mean()}, \nAvg. Label Size {np.array(label_size).mean()}, \nAvg. bb size {np.array(bb_size).mean()}, \nAvg. bb label relation {np.array(bb_label_relation).mean()}")
+        print(f"Avg. Label Density {(np.array(label_density).mean())}")
+        print(f"Avg. amount of labels per patch {np.array(labels_per_image).mean()}")
+        print(f"Avg. Label Size {np.array(label_size).mean()}")
+        print(f"Avg. bb size {np.array(bb_size).mean()}")
+        print(f"Avg. bb label relation {np.array(bb_label_relation).mean()}")

@@ -1,33 +1,42 @@
 # GeoFM
 
-## Models
-### Download Checkpoints for GroundingDINO and RemoteClip
+## Download Checkpoints for GroundingDINO, RemoteClip and RemoteSAM
 ```
-mkdir ./weights
+mkdir -p ./weights/bert-base-uncased
 wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth -P ./weights/
 wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth -P ./weights/
+
 wget -q https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt -P ./weights/
 wget -q https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-L-14.pt -P ./weights/
+
+wget -q https://huggingface.co/1e12Leon/RemoteSAM/resolve/main/RemoteSAMv1.pt -P ./weights/
+
+wget -q https://huggingface.co/google-bert/bert-base-uncased/resolve/main/config.json -P ./weights/bert-base-uncased/
+wget -q https://huggingface.co/google-bert/bert-base-uncased/resolve/main/pytorch_model.bin -P ./weights/bert-base-uncased/
+wget -q https://huggingface.co/google-bert/bert-base-uncased/resolve/main/tokenizer.json -P ./weights/bert-base-uncased/
+wget -q https://huggingface.co/google-bert/bert-base-uncased/resolve/main/tokenizer_config.json -P ./weights/bert-base-uncased/
+wget -q https://huggingface.co/google-bert/bert-base-uncased/resolve/main/vocab.txt -P ./weights/bert-base-uncased/
 ```
 
+## Download RemoteSAM GitHub Repository
+```
+git clone https://github.com/1e12Leon/RemoteSAM.git
+```
 
 ## Data
 Data has to be downloaded and saved into a folder `/data`
 ### BBD
 BBD data was originally provided here: https://doi.org/10.14459/2023mp1709451
 
-The preprocessed files, which are tiled and cleaned to not contain empty images can be found here: https://figshare.com/s/83c2cead0d8fcc65dc6c
+The preprocessed files, which are tiled and cleaned to not contain empty images can be found here: https://figshare.com/s/83c2cead0d8fcc65dc6c.
 
 ### Surface Water
-The surface water dataset was originally proposed here: https://doi.org/10.11588/data/AAKAF9
+The surface water dataset was originally proposed here: https://doi.org/10.11588/data/AAKAF9. The preprocessing script used is in `src/prepare_surface_water.py`.
 
-The preprocessed files which are tiled, restricted to three visible bands and preprocessed can be found here: https://figshare.com/s/a359b71447c18d02b9db
+The preprocessed files which are tiled, restricted to three visible bands and preprocessed can be found here: https://figshare.com/s/a359b71447c18d02b9db.
 
-The preprocessing script is in `src/prepare_surface_water.py`.
-
-
-## Docker Environment
-Build the docker image
+## Environment
+For all experiments except RemoteSAM, we can build the following Docker image:
 ```
 docker build -t python-geofm .
 ```
@@ -38,13 +47,19 @@ docker cp geofm-container:/GEOtmp/GroundingDINO ./GroundingDINO
 docker exec -it geofm-container bash
 ```
 
-Run the evaluation of the models like specified in the following section
+For the RemoteSAM experiments, create an environment as described in RemoteSAM/README.md. 
+It might be necessary to edit the last library to spacy==3.7.4
+A pandas and importlib-resources installation are required and missing from RemoteSAM/requirements.txt
 
 ## Models
+Run the evaluation of the models like specified in the following. You can change the SAM model size with `--model_name` with possible model sizes base, large, and huge. You must use `--dataset water1k` to test on the Surface Water Dataset.
+
 1. Evaluate SAM with prompts from ground-truth masks
     ```
     python3 src/sam_prompt.py --dataset bbd1k
     ```
+
+    The following prompt types are supported:
     1. `--prompt bb` : bounding-boxes
 
     2. `--prompt center_pt` : center point of mask geometries
@@ -58,7 +73,22 @@ Run the evaluation of the models like specified in the following section
     python3 src/sam_dino_prompt.py --dataset bbd1k --text_prompt building
     ```
 
+    Multiple text prompts can be passed as such `--text_prompt "river . stream . lake ."`
+
+    You can change the GroundingDINO model size with `--dino_model_name` with possible model sizes SwinT and SwinB. The arguments `--box_threshold` and `--text_threshold` control GroundingDINO objectness and vision-language similarity.
+
 3. Evaluate classified automatic SAM for the wanted label:
     ```
     python3 src/sam_automatic_label.py --dataset bbd1k --label building
     ```
+
+    SAM Automatic can be parameterized with `--points_per_side`, which specifies how many points are sampled uniformly along each side of the image. This results in a total of points_per_side**2 sampled points across the image.
+
+    The used CLIP model can be changed using the `--clip_model_name` flag. For RemoteClip, choose ViT-B-32 or ViT-L-14, while ViT-G-14 if for the original CLIP model without fine-tuning on geospatial data. `--clip_threshold` specifies the minimum CLIP confidence required to retain SAM-generated masks classified as the target label.
+
+4. Evaluate RemoteSAM with text prompts:
+    ```
+    python3 src/remote_sam_text_prompt.py --dataset bbd1k --text_prompt building
+    ```
+
+    Multiple text prompts can be passed as such `--text_prompt river stream lake`

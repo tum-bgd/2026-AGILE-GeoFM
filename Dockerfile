@@ -13,7 +13,7 @@ RUN apt-get update && \
     apt install -y tmux
 
 WORKDIR /GEOtmp
-RUN pip install --upgrade pip
+RUN pip install pip==22.3.1
 
 # Install requirements
 COPY ./requirements.txt ./

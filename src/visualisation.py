@@ -12,7 +12,8 @@ class Visualizer():
             'multiple_pts': f"{prompt_info} Sampled Points Prediction",
             'foreground_background_pts': f"{prompt_info} Fore-/Background Points Prediction",
             'text_prompt': "Grounding DINO Prompted SAM",
-            'auto_sam_classified': "RemoteClip Classified SAM Automatic"
+            'auto_sam_classified': "RemoteClip Classified SAM Automatic",
+            'remote_sam': f"Text-Prompted RemoteSAM",
         }
 
     def show_prompts(self, ax, prompts):
@@ -28,6 +29,9 @@ class Visualizer():
                 h, w = mask.shape[-2:]
                 mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
                 ax.imshow(mask_image)
+
+        elif self.prompt_type == 'remote_sam':
+            pass
 
         else:
             prompts = np.array(prompts).reshape(-1, 2)

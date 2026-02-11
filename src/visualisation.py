@@ -12,7 +12,7 @@ class Visualizer():
             'multiple_pts': f"{prompt_info} Sampled Points Prediction",
             'foreground_background_pts': f"{prompt_info} Fore-/Background Points Prediction",
             'text_prompt': "Grounding DINO Prompted SAM",
-            'auto_sam_classified': "RemoteClip Classified SAM Automatic",
+            'auto_sam_classified': "CLIP Classified SAM Automatic",
             'remote_sam': f"Text-Prompted RemoteSAM",
         }
 

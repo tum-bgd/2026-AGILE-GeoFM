@@ -138,35 +138,12 @@ class BuildDataset:
         return output
 
 
-def build_data_loader(data_source, batch_size=64, input_size=224, tfm=None, shuffle=False):
-
-    data_loader = torch.utils.data.DataLoader(
-        DatasetWrapper(data_source, input_size=input_size, transform=tfm),
-        batch_size=batch_size,
-        num_workers=8,
-        shuffle=shuffle,
-        drop_last=False,
-        pin_memory=(torch.cuda.is_available())
-    )
-    assert len(data_loader) > 0
-
-    return data_loader
-
-
 def cls_acc(output, target, topk=1):
     pred = output.topk(topk, 1, True, True)[1].t()
     correct = pred.eq(target.view(1, -1).expand_as(pred))
     acc = float(correct[: topk].reshape(-1).float().sum(0, keepdim=True).cpu().numpy())
     acc = 100 * acc / target.shape[0]
     return acc
-
-
-def clip_classifier(text_queries, clip_model, tokenizer):
-    with torch.no_grad():
-        texts = tokenizer(text_queries).cuda()
-        text_features = clip_model.encode_text(texts)
-        text_features /= text_features.norm(dim=-1, keepdim=True)
-    return text_features.T
 
 
 def build_cache_model(cfg, clip_model, train_loader_cache):
@@ -252,7 +229,7 @@ def run_tip_adapter_F(cfg, cache_keys, cache_values, clip_weights, clip_model, t
 
 
 def main(args):
-    clip_model_name = args.clip_model_name
+    clip_model_name = 'ViT-bigG-14'
     label = args.label
     cfg = {
         'clip_model_name': clip_model_name,
@@ -268,19 +245,17 @@ def main(args):
     os.makedirs(cfg['cache_dir'], exist_ok=True)
 
     # Load OpenClip
-    if clip_model_name == 'ViT-bigG-14':
-        clip_model, _, _ = open_clip.create_model_and_transforms(clip_model_name, pretrained='laion2b_s39b_b160k')
-    else:
-        clip_model, _, _ = open_clip.create_model_and_transforms(clip_model_name)
-        ckpt = torch.load(f"weights/RemoteCLIP-{clip_model_name}.pt", map_location="cpu")
-        _ = clip_model.load_state_dict(ckpt)
-
+    clip_model, _, _ = open_clip.create_model_and_transforms(clip_model_name, pretrained='laion2b_s39b_b160k')
     tokenizer = open_clip.get_tokenizer(clip_model_name)
     clip_model = clip_model.cuda().eval()
 
     # Textual features
     text_queries = [f"satellite image of {label}", f"satellite image of background"]
-    clip_weights = clip_classifier(text_queries, clip_model, tokenizer)
+    with torch.no_grad():
+        texts = tokenizer(text_queries).cuda()
+        text_features = clip_model.encode_text(texts)
+        text_features /= text_features.norm(dim=-1, keepdim=True)
+    clip_weights = text_features.T
 
     data = BuildDataset(cfg['cache_dir'], cfg['shots']).train
     train_tranform = T.Compose([
@@ -290,8 +265,25 @@ def main(args):
         T.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
     ])
 
-    train_loader_cache = build_data_loader(data_source=data, batch_size=256, tfm=train_tranform, shuffle=False)
-    train_loader_F = build_data_loader(data_source=data, batch_size=256, tfm=train_tranform, shuffle=True)
+    train_loader_cache = torch.utils.data.DataLoader(
+        DatasetWrapper(data, input_size=224, transform=train_tranform),
+        batch_size=256,
+        num_workers=8,
+        shuffle=False,
+        drop_last=False,
+        pin_memory=(torch.cuda.is_available())
+    )
+    assert len(train_loader_cache) > 0
+
+    train_loader_F = torch.utils.data.DataLoader(
+        DatasetWrapper(data, input_size=224, transform=train_tranform),
+        batch_size=256,
+        num_workers=8,
+        shuffle=True,
+        drop_last=False,
+        pin_memory=(torch.cuda.is_available())
+    )
+    assert len(train_loader_F) > 0
 
     # Construct the cache model by few-shot training set
     cache_keys, cache_values = build_cache_model(cfg, clip_model, train_loader_cache)
@@ -301,7 +293,6 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--clip_model_name', type=str, default='ViT-bigG-14', choices=['ViT-B-32', 'ViT-L-14', 'ViT-bigG-14'])
     parser.add_argument('--label', type=str, default='a surface water')
     parser.add_argument('--shots', type=int, default=8)
     parser.add_argument('--lr', type=float, default=0.001)
